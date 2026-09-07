@@ -15,14 +15,22 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 0
 
-      - name: 1.5 Quick Set Taiwan Locale & Timezone
+      - name: 1.5 Force Install Full Taiwan Language Pack
         run: |
-          Write-Host "正在切換系統區域與時區為台灣..."
+          Write-Host ">>> 開始強制安裝完整繁體中文(台灣)語言包... <<<"
+          # 強制啟動 Windows 語言下載背景服務
+          Set-Service -Name wuauserv -StartupType Automatic -ErrorAction SilentlyContinue
+          Start-Service -Name wuauserv -ErrorAction SilentlyContinue
+          
+          # 使用強效語系命令（不帶無法識別的引數），並允許自動下載
+          Add-LanguageLanguageListEntry -LanguageId zh-TW -Force -ErrorAction SilentlyContinue
           Set-Culture zh-TW
           Set-WinSystemLocale -SystemLocale zh-TW
+          Set-WinUILanguageOverride -Language zh-TW
           Set-WinHomeLocation -GeoId 237
           Set-TimeZone -Id "Taipei Standard Time"
-          Write-Host "設定完成！"
+          
+          Write-Host "設定完成！請注意：初次登入時可能需要等背景套用約 1-2 分鐘。"
 
       - name: 2. Create Admin Account
         run: |
@@ -36,18 +44,12 @@ jobs:
           TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
         run: |
           Write-Host ">>> 使用 Choco 部署免外掛 Tailscale 綠色套件... <<<"
-          # 使用 Choco 一鍵下載並強制註冊環境變數，完美繞過 MSI 權限封鎖
           choco install tailscale -y --no-progress
-          
-          # 刷新環境變數，讓目前的 PowerShell 工作階段能即時辨識 tailscale 指令
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           
           Write-Host "正在嘗試啟動 Tailscale 連線..."
-          # 透過系統優先級呼叫 tailscale
           & tailscale up --authkey="$Env:TAILSCALE_AUTHKEY" --hostname="github-rdp-server"
           Start-Sleep -Seconds 5
-
-          # 取得 Tailscale 分配的專屬內網 IP
           $ts_ip = & tailscale ip -4
 
           Write-Host ""
