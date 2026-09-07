@@ -15,22 +15,18 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 0
 
-      - name: 1.5 Force Install Full Taiwan Language Pack
+      - name: 1.5 Set Taiwan Region and Locale (DISM Method)
         run: |
-          Write-Host ">>> 開始強制安裝完整繁體中文(台灣)語言包... <<<"
-          # 強制啟動 Windows 語言下載背景服務
-          Set-Service -Name wuauserv -StartupType Automatic -ErrorAction SilentlyContinue
-          Start-Service -Name wuauserv -ErrorAction SilentlyContinue
-          
-          # 使用強效語系命令（不帶無法識別的引數），並允許自動下載
-          Add-LanguageLanguageListEntry -LanguageId zh-TW -Force -ErrorAction SilentlyContinue
+          Write-Host "正在設定系統底層區域為台灣格式..."
+          # 使用所有 Windows Server 都支援的標準指令，設定區域與時區
           Set-Culture zh-TW
           Set-WinSystemLocale -SystemLocale zh-TW
-          Set-WinUILanguageOverride -Language zh-TW
           Set-WinHomeLocation -GeoId 237
           Set-TimeZone -Id "Taipei Standard Time"
           
-          Write-Host "設定完成！請注意：初次登入時可能需要等背景套用約 1-2 分鐘。"
+          # 使用 DISM 修改系統預設語系（防亂碼）
+          dism /online /Set-intl:zh-TW /Quiet
+          Write-Host "底層語系設定完成！"
 
       - name: 2. Create Admin Account
         run: |
