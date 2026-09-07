@@ -1,1 +1,27 @@
+name: Manual Trigger with Inputs
 
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '選擇部署環境'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      log_level:
+        description: '日志記錄層級'
+        required: false
+        default: 'info'
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print inputs
+        run: |
+          echo "部署環境：${{ github.event.inputs.environment }}"
+          echo "Logs 層級：${{ inputs.log_level }}"
