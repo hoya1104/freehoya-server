@@ -31,37 +31,24 @@ jobs:
           Add-LocalGroupMember -Group "Administrators" -Member "freelin" -ErrorAction SilentlyContinue
           net user runneradmin Hoya-1104+
 
-      - name: 3. Install & Connect Tailscale VPN
+      - name: 3. Install & Connect Tailscale VPN via Choco
         env:
           TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
         run: |
-          Write-Host "正在下載 Tailscale 安裝包..."
-          Invoke-WebRequest "https://tailscale.com" -OutFile "C:\tailscale.msi"
+          Write-Host ">>> 使用 Choco 部署免外掛 Tailscale 綠色套件... <<<"
+          # 使用 Choco 一鍵下載並強制註冊環境變數，完美繞過 MSI 權限封鎖
+          choco install tailscale -y --no-progress
           
-          Write-Host "正在進行背景靜態安裝，請稍候..."
-          Start-Process msiexec -ArgumentList "/i C:\tailscale.msi /quiet /norestart" -Wait
+          # 刷新環境變數，讓目前的 PowerShell 工作階段能即時辨識 tailscale 指令
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           
-          # 🔄 修正：強制等待直到 tailscale.exe 檔案確實出現才繼續（最多等 60 秒）
-          $exePath = "C:\Program Files\Tailscale\tailscale.exe"
-          $retry = 0
-          while (!(Test-Path $exePath) -and $retry -lt 12) {
-              Write-Host "等待 Tailscale 安裝釋出組件... ($($retry * 5)秒)"
-              Start-Sleep -Seconds 5
-              $retry++
-          }
-
-          if (!(Test-Path $exePath)) {
-              Write-Error "Tailscale 安裝失敗，找不到主程式！"
-              exit 1
-          }
-
-          Write-Host "Tailscale 安裝成功，正在啟動連線..."
-          # 啟動並加入您的 Tailscale 網路
-          & $exePath up --authkey="$Env:TAILSCALE_AUTHKEY" --hostname="github-rdp-server"
+          Write-Host "正在嘗試啟動 Tailscale 連線..."
+          # 透過系統優先級呼叫 tailscale
+          & tailscale up --authkey="$Env:TAILSCALE_AUTHKEY" --hostname="github-rdp-server"
           Start-Sleep -Seconds 5
 
-          # 取得 Tailscale IP
-          $ts_ip = & $exePath ip -4
+          # 取得 Tailscale 分配的專屬內網 IP
+          $ts_ip = & tailscale ip -4
 
           Write-Host ""
           Write-Host "==========================================" -ForegroundColor Green
