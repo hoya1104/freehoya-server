@@ -17,8 +17,7 @@ jobs:
 
       - name: 1.5 Quick Set Taiwan Locale & Timezone
         run: |
-          Write-Host "正在切換系統區域與時區為台灣 (免下載免等待)..."
-          # 設定地區、非Unicode程式語系、時區與地理位置為台灣
+          Write-Host "正在切換系統區域與時區為台灣..."
           Set-Culture zh-TW
           Set-WinSystemLocale -SystemLocale zh-TW
           Set-WinHomeLocation -GeoId 237
@@ -36,18 +35,33 @@ jobs:
         env:
           TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
         run: |
-          # Download and install Tailscale silently
+          Write-Host "正在下載 Tailscale 安裝包..."
           Invoke-WebRequest "https://tailscale.com" -OutFile "C:\tailscale.msi"
+          
+          Write-Host "正在進行背景靜態安裝，請稍候..."
           Start-Process msiexec -ArgumentList "/i C:\tailscale.msi /quiet /norestart" -Wait
+          
+          # 🔄 修正：強制等待直到 tailscale.exe 檔案確實出現才繼續（最多等 60 秒）
+          $exePath = "C:\Program Files\Tailscale\tailscale.exe"
+          $retry = 0
+          while (!(Test-Path $exePath) -and $retry -lt 12) {
+              Write-Host "等待 Tailscale 安裝釋出組件... ($($retry * 5)秒)"
+              Start-Sleep -Seconds 5
+              $retry++
+          }
 
-          # Connect to Tailscale network
+          if (!(Test-Path $exePath)) {
+              Write-Error "Tailscale 安裝失敗，找不到主程式！"
+              exit 1
+          }
+
+          Write-Host "Tailscale 安裝成功，正在啟動連線..."
+          # 啟動並加入您的 Tailscale 網路
+          & $exePath up --authkey="$Env:TAILSCALE_AUTHKEY" --hostname="github-rdp-server"
           Start-Sleep -Seconds 5
-          & "C:\Program Files\Tailscale\tailscale.exe" up --authkey="$Env:TAILSCALE_AUTHKEY" --hostname="github-rdp-server"
 
-          Start-Sleep -Seconds 8
-
-          # Get Tailscale IP
-          $ts_ip = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+          # 取得 Tailscale IP
+          $ts_ip = & $exePath ip -4
 
           Write-Host ""
           Write-Host "==========================================" -ForegroundColor Green
