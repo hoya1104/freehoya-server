@@ -18,8 +18,8 @@ jobs:
       - name: 1.5 Set OS Language to zh-TW (Taiwan) & Timezone
         run: |
           Write-Host "正在下載並安裝繁體中文(台灣)語言包..."
-          # 安裝 zh-TW 語言包並將其同步應用到全域設定
-          Install-Language -Language zh-TW -CopyToSettings -Force
+          # 修正：移除不支援的 -Force 參數
+          Install-Language -Language zh-TW -CopyToSettings
           
           Write-Host "正在修改區域設定與系統語系..."
           # 修改地區格式為台灣、系統語系(非Unicode)為台灣，並修改時區為台北
