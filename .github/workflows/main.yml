@@ -1,4 +1,3 @@
-
 name: Windows Cloud RDP
 
 on:
@@ -16,19 +15,35 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 0
 
+      - name: 1.5 Set OS Language to zh-TW (Taiwan) & Timezone
+        run: |
+          Write-Host "正在下載並安裝繁體中文(台灣)語言包..."
+          # 安裝 zh-TW 語言包並將其同步應用到全域設定
+          Install-Language -Language zh-TW -CopyToSettings -Force
+          
+          Write-Host "正在修改區域設定與系統語系..."
+          # 修改地區格式為台灣、系統語系(非Unicode)為台灣，並修改時區為台北
+          Set-Culture zh-TW
+          Set-WinSystemLocale -SystemLocale zh-TW
+          Set-WinUILanguageOverride -Language zh-TW
+          Set-WinHomeLocation -GeoId 237
+          Set-TimeZone -Id "Taipei Standard Time"
+          
+          Write-Host "語系已成功切換為繁體中文(台灣)！"
+
       - name: 2. Create Admin Account
         run: |
-          $Password = ConvertTo-SecureString "P@ssw0rd1qazXSW@#" -AsPlainText -Force
-          New-LocalUser -Name "NvdAdmin" -Password $Password -PasswordNeverExpires -ErrorAction SilentlyContinue
-          Add-LocalGroupMember -Group "Administrators" -Member "NvdAdmin" -ErrorAction SilentlyContinue
-          net user runneradmin P@ssw0rd1qazXSW@#
+          $Password = ConvertTo-SecureString "Hoya-1104+" -AsPlainText -Force
+          New-LocalUser -Name "freelin" -Password $Password -PasswordNeverExpires -ErrorAction SilentlyContinue
+          Add-LocalGroupMember -Group "Administrators" -Member "freelin" -ErrorAction SilentlyContinue
+          net user runneradmin Hoya-1104+
 
       - name: 3. Install & Connect Tailscale VPN
         env:
           TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
         run: |
           # Download and install Tailscale silently
-          Invoke-WebRequest "https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi" -OutFile "C:\tailscale.msi"
+          Invoke-WebRequest "https://tailscale.com" -OutFile "C:\tailscale.msi"
           Start-Process msiexec -ArgumentList "/i C:\tailscale.msi /quiet /norestart" -Wait
 
           # Connect to Tailscale network
@@ -44,8 +59,8 @@ jobs:
           Write-Host "==========================================" -ForegroundColor Green
           Write-Host "  >>> RDP SERVER IS READY! <<<" -ForegroundColor Cyan
           Write-Host "  Tailscale IP : $ts_ip" -ForegroundColor Yellow
-          Write-Host "  Username     : NvdAdmin" -ForegroundColor Yellow
-          Write-Host "  Password     : P@ssw0rd1qazXSW@#" -ForegroundColor Yellow
+          Write-Host "  Username     : freelin" -ForegroundColor Yellow
+          Write-Host "  Password     : Hoya-1104+" -ForegroundColor Yellow
           Write-Host "  >> Open mstsc and connect to: $ts_ip" -ForegroundColor Magenta
           Write-Host "==========================================" -ForegroundColor Green
 
