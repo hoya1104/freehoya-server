@@ -15,21 +15,15 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 0
 
-      - name: 1.5 Set OS Language to zh-TW (Taiwan) & Timezone
+      - name: 1.5 Quick Set Taiwan Locale & Timezone
         run: |
-          Write-Host "正在下載並安裝繁體中文(台灣)語言包..."
-          # 修正：移除不支援的 -Force 參數
-          Install-Language -Language zh-TW -CopyToSettings
-          
-          Write-Host "正在修改區域設定與系統語系..."
-          # 修改地區格式為台灣、系統語系(非Unicode)為台灣，並修改時區為台北
+          Write-Host "正在切換系統區域與時區為台灣 (免下載免等待)..."
+          # 設定地區、非Unicode程式語系、時區與地理位置為台灣
           Set-Culture zh-TW
           Set-WinSystemLocale -SystemLocale zh-TW
-          Set-WinUILanguageOverride -Language zh-TW
           Set-WinHomeLocation -GeoId 237
           Set-TimeZone -Id "Taipei Standard Time"
-          
-          Write-Host "語系已成功切換為繁體中文(台灣)！"
+          Write-Host "設定完成！"
 
       - name: 2. Create Admin Account
         run: |
