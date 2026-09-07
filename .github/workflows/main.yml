@@ -15,18 +15,15 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 0
 
-      - name: 1.5 Set Taiwan Region and Locale (DISM Method)
+      - name: 1.5 Set Taiwan Region and Locale (Anti-CodeError)
         run: |
-          Write-Host "正在設定系統底層區域為台灣格式..."
-          # 使用所有 Windows Server 都支援的標準指令，設定區域與時區
+          Write-Host "正在設定系統區域與時區為台灣（防軟體亂碼格式）..."
+          # 設定文化格式與非 Unicode 程式的語系為台灣（此步驟可完美解決繁中軟體亂碼問題）
           Set-Culture zh-TW
           Set-WinSystemLocale -SystemLocale zh-TW
           Set-WinHomeLocation -GeoId 237
           Set-TimeZone -Id "Taipei Standard Time"
-          
-          # 使用 DISM 修改系統預設語系（防亂碼）
-          dism /online /Set-intl:zh-TW /Quiet
-          Write-Host "底層語系設定完成！"
+          Write-Host "安全設定完成！"
 
       - name: 2. Create Admin Account
         run: |
